@@ -13,10 +13,9 @@ public struct MarqueeText : View {
     
     public var body : some View {
         let stringWidth = text.widthOfString(usingFont: font)
-        let stringHeight = text.heightOfString(usingFont: font)
         
         let animation = Animation
-            .linear(duration: Double(stringWidth) / 30)
+            .linear(duration: Double(stringWidth) / 20)
             .delay(startDelay)
             .repeatForever(autoreverses: false)
         
@@ -25,16 +24,15 @@ public struct MarqueeText : View {
         
         return ZStack {
             GeometryReader { geo in
-                if stringWidth > geo.size.width { // don't use self.animate as conditional here
                     Group {
                         Text(self.text)
                             .lineLimit(1)
                             .font(.init(font))
-                            .offset(x: self.animate ? -stringWidth - stringHeight * 2 : 0)
+                            .offset(x: self.animate ? -max(geo.size.width, stringWidth + 16) : 0)
                             .animation(self.animate ? animation : nullAnimation, value: self.animate)
                             .onAppear {
                                 DispatchQueue.main.async {
-                                    self.animate = geo.size.width < stringWidth
+                                    self.animate = true
                                 }
                             }
                             .fixedSize(horizontal: true, vertical: false)
@@ -43,18 +41,18 @@ public struct MarqueeText : View {
                         Text(self.text)
                             .lineLimit(1)
                             .font(.init(font))
-                            .offset(x: self.animate ? 0 : stringWidth + stringHeight * 2)
+                            .offset(x: self.animate ? 0 : max(geo.size.width, stringWidth + 16))
                             .animation(self.animate ? animation : nullAnimation, value: self.animate)
                             .onAppear {
                                 DispatchQueue.main.async {
-                                    self.animate = geo.size.width < stringWidth
+                                    self.animate = true
                                 }
                             }
                             .fixedSize(horizontal: true, vertical: false)
                             .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                     }
                     .onValueChanged(of: self.text, perform: {text in
-                        self.animate = geo.size.width < stringWidth
+                        self.animate = true
                     })
                     
                     .offset(x: leftFade)
@@ -74,18 +72,9 @@ public struct MarqueeText : View {
                         })
                     .frame(width: geo.size.width + leftFade)
                     .offset(x: leftFade * -1)
-                } else {
-                    Text(self.text)
-                        .font(.init(font))
-                        .onValueChanged(of: self.text, perform: {text in
-                            self.animate = geo.size.width < stringWidth
-                        })
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: alignment)
-                }
             }
         }
-        .frame(height: stringHeight)
-        .frame(maxWidth: isCompact ? stringWidth : nil)
+        .frame(maxWidth: .infinity)
         .onDisappear { self.animate = false }
 
     }
